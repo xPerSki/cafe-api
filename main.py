@@ -48,5 +48,15 @@ def home():
     return render_template("index.html")
 
 
+@app.route("/random", methods=["GET"])
+def random():
+    if request.method == "GET":
+        query = db.select(Cafe).order_by(Cafe.id)
+        result = db.session.execute(query)
+        all_cafes = result.scalars().all()
+        random_cafe = choice(all_cafes)
+        return jsonify(cafe=random_cafe.to_dict())
+
+
 if __name__ == '__main__':
     app.run(debug=True)
