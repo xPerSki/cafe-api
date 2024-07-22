@@ -58,5 +58,14 @@ def random():
         return jsonify(cafe=random_cafe.to_dict())
 
 
+@app.route("/all", methods=["GET"])
+def get_all():
+    if request.method == "GET":
+        query = db.select(Cafe).order_by(Cafe.id)
+        result = db.session.execute(query)
+        cafes = result.scalars().all()
+        return jsonify(cafes=[cafe.to_dict() for cafe in cafes])
+
+
 if __name__ == '__main__':
     app.run(debug=True)
