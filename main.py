@@ -50,56 +50,68 @@ def home():
 
 @app.route("/random", methods=["GET"])
 def random():
-    if request.method == "GET":
-        query = db.select(Cafe).order_by(Cafe.id)
-        result = db.session.execute(query)
-        all_cafes = result.scalars().all()
-        random_cafe = choice(all_cafes)
-        return jsonify(cafe=random_cafe.to_dict())
+    query = db.select(Cafe).order_by(Cafe.id)
+    result = db.session.execute(query)
+    all_cafes = result.scalars().all()
+    random_cafe = choice(all_cafes)
+    return jsonify(cafe=random_cafe.to_dict())
 
 
 @app.route("/all", methods=["GET"])
 def get_all():
-    if request.method == "GET":
-        query = db.select(Cafe).order_by(Cafe.id)
-        result = db.session.execute(query)
-        cafes = result.scalars().all()
-        return jsonify(cafes=[cafe.to_dict() for cafe in cafes])
+    query = db.select(Cafe).order_by(Cafe.id)
+    result = db.session.execute(query)
+    cafes = result.scalars().all()
+    return jsonify(cafes=[cafe.to_dict() for cafe in cafes])
 
 
 @app.route("/search", methods=["GET"])
 def search():
-    if request.method == "GET":
-        loc = request.args.get("loc")
-        query = db.select(Cafe).where(Cafe.location == loc.title())
-        result = db.session.execute(query)
-        found_cafes = result.scalars().all()
+    loc = request.args.get("loc")
+    query = db.select(Cafe).where(Cafe.location == loc.title())
+    result = db.session.execute(query)
+    found_cafes = result.scalars().all()
 
-        if found_cafes:
-            return jsonify(cafes=[cafe.to_dict() for cafe in found_cafes])
-        else:
-            return jsonify(errors={"Not Found": "Sorry, we don't have a cafe at this location."})
+    if found_cafes:
+        return jsonify(cafes=[cafe.to_dict() for cafe in found_cafes])
+    else:
+        return jsonify(errors={"Not Found": "Sorry, we don't have a cafe at this location."})
 
 
 @app.route("/add", methods=["POST"])
 def add():
-    if request.method == "POST":
-        new_cafe = Cafe(
-            name=request.form.get("name"),
-            map_url=request.form.get("map_url"),
-            img_url=request.form.get("img_url"),
-            location=request.form.get("loc"),
-            has_sockets=bool(request.form.get("sockets")),
-            has_toilet=bool(request.form.get("toilet")),
-            has_wifi=bool(request.form.get("wifi")),
-            can_take_calls=bool(request.form.get("calls")),
-            seats=request.form.get("seats"),
-            coffee_price=request.form.get("coffee_price"),
-        )
-        db.session.add(new_cafe)
-        db.session.commit()
+    new_cafe = Cafe(
+        name=request.form.get("name"),
+        map_url=request.form.get("map_url"),
+        img_url=request.form.get("img_url"),
+        location=request.form.get("loc"),
+        has_sockets=bool(request.form.get("sockets")),
+        has_toilet=bool(request.form.get("toilet")),
+        has_wifi=bool(request.form.get("wifi")),
+        can_take_calls=bool(request.form.get("calls")),
+        seats=request.form.get("seats"),
+        coffee_price=request.form.get("coffee_price"),
+    )
+    db.session.add(new_cafe)
+    db.session.commit()
 
-        return jsonify(response={"success": "Successfully added the new cafe."})
+    return jsonify(response={"success": "Successfully added the new cafe."})
+
+
+@app.route("/update-price/<int:cafe_id>", methods=["PATCH"])
+def update_price(cafe_id):
+    if request.method == "PATCH":
+        query = db.select(Cafe).where(Cafe.id == cafe_id)
+        result = db.session.execute(query)
+        found_cafe = result.scalar()
+
+        if found_cafe:
+            new_price = request.args.get("new_price")
+            found_cafe.coffee_price = new_price
+            db.session.commit()
+            return jsonify(success="Successfully updated the price."), 200
+        else:
+            return jsonify(errors={"Not Found": "Sorry, a cafe with that id was not found in the database."}), 404
 
 
 if __name__ == '__main__':
