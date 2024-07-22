@@ -75,7 +75,7 @@ def search():
     if found_cafes:
         return jsonify(cafes=[cafe.to_dict() for cafe in found_cafes])
     else:
-        return jsonify(errors={"Not Found": "Sorry, we don't have a cafe at this location."})
+        return jsonify(errors={"Not Found": "Sorry, we don't have a cafe at this location."}), 404
 
 
 @app.route("/add", methods=["POST"])
@@ -95,7 +95,7 @@ def add():
     db.session.add(new_cafe)
     db.session.commit()
 
-    return jsonify(response={"success": "Successfully added the new cafe."})
+    return jsonify(response={"success": "Successfully added the new cafe."}), 200
 
 
 @app.route("/update-price/<int:cafe_id>", methods=["PATCH"])
@@ -112,6 +112,24 @@ def update_price(cafe_id):
             return jsonify(success="Successfully updated the price."), 200
         else:
             return jsonify(errors={"Not Found": "Sorry, a cafe with that id was not found in the database."}), 404
+
+
+@app.route("/report-closed/<int:cafe_id>", methods=["DELETE"])
+def close(cafe_id):
+    query = db.select(Cafe).where(Cafe.id == cafe_id)
+    result = db.session.execute(query)
+    found_cafe = result.scalar()
+    api_key = request.args.get("api_key")
+
+    if api_key == "SecretAPIKey":
+        if found_cafe:
+            db.session.delete(found_cafe)
+            db.session.commit()
+            return jsonify(success="Successfully deleted cafe."), 200
+        else:
+            return jsonify(errors={"Not Found": "Cafe id not found."}), 404
+    else:
+        return jsonify(errors={"Not Authorized": "You are not authorized to do this action"}), 402
 
 
 if __name__ == '__main__':
